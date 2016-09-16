@@ -10,7 +10,7 @@ from openzwave.option import ZWaveOption
 import deviceEvents as events
 import manager
 import networkMonitor
-from core import config
+from pygate_core import config
 
 #_readyEvent = threading.Event()             # signaled when the zwave network has been fully started.
 

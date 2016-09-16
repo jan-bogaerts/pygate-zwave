@@ -12,7 +12,7 @@ import logging
 import os.path
 import xml.etree.ElementTree
 
-from core import config
+from pygate_core import config
 
 _devClasses = {}
 logger = logging.getLogger('zwave')

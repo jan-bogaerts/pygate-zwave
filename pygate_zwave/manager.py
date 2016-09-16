@@ -8,7 +8,7 @@ __status__ = "Prototype"  # "Development", or "Production"
 import logging
 
 import deviceClasses
-from core.gateway import Gateway
+from pygate_core.gateway import Gateway
 
 logger = logging.getLogger('zwave')
 
