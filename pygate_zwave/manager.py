@@ -100,13 +100,13 @@ def _getAssetType(node, val):
     logger.info("node type: " + val.type)            # for debugging
     dataType = str(val.type)
 
-    type = "{'type': "
+    type = '{"type": '
     if dataType == 'Bool' or dataType == 'Button':
-        type += "'boolean'"
+        type += '"boolean"'
     elif dataType == 'Decimal':
-        type += "'number'"
+        type += '"number"'
     elif dataType == 'Integer' or dataType == "Byte" or dataType == 'Int' or dataType == "Short":
-        type += "'integer'"
+        type += '"integer"'
     else:
         type = '{"type": "string"'                              #small hack for now.
 
@@ -117,7 +117,9 @@ def _getAssetType(node, val):
         type += ', "unit": "' + val.units + '"'
     if val.data_items and isinstance(val.data_items, set):
         type += ', "enum": [' + ', '.join(['"' + y + '"' for y in val.data_items]) + ']'
-    return type + "}"
+    result = type + "}"
+    logging.info(result)
+    return result
 
 def addMinMax(type, node, val):
     if val.command_class == _CC_MultiLevelSwitch:
