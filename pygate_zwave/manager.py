@@ -39,16 +39,16 @@ def syncDevices(existing, Full):
         if str(node.node_id) != '1':                    # for some reason, this compare doesn't work without convertion.
             found = next((x for x in existing if x['id'].encode('ascii','ignore') == str(node.node_id)), None)
             if not found:
-                addDevice(node)
+                addDevice(node, 'create')
             else:
                 existing.remove(found)              # so we know at the end which ones have to be removed.
                 if Full:                            # don't refresh upon startup, this only slows it down, no need.
-                    addDevice(node, Full)                # this will also refresh it
+                    addDevice(node, 'update')        # this will also refresh it
     for dev in existing:                        # all the items that remain in the 'existing' list, are no longer devices in this network, so remove them
         gateway.deleteDevice(dev['id'])
 
 
-def addDevice(node, createDevice = True):
+def addDevice(node, mode = None):
     """adds the specified node to the cloud as a device. Also adds all the assets.
     :param node: the device details
     :param createDevice: when true, addDevice will be called. when false, only the assets will be updated/created
@@ -59,8 +59,10 @@ def addDevice(node, createDevice = True):
             name = node.product_name
         else:
             name = 'unknown'
-        if createDevice:                              # for an update, we don't need to do anyhthing for the device, only the assets
+        if mode == "create":                              # for an update, we don't need to do anyhthing for the device, only the assets
             gateway.addDevice(node.node_id, name, node.type)
+        elif mode == 'update':
+            gateway.addDevice(node.node_id, None, node.type)            # when updating, don't overwrite the title of the device.
         items = dict(node.values)                                         # take a copy of the list cause if the network is still refreshing/loading, the list could get updated while in the loop
         gateway.addAsset('location', node.node_id, 'location', 'the physical location of the device', True, 'string', 'Config')
         for key, val in items.iteritems():
@@ -118,12 +120,11 @@ def _getAssetType(node, val):
     if val.data_items and isinstance(val.data_items, set):
         type += ', "enum": [' + ', '.join(['"' + y + '"' for y in val.data_items]) + ']'
     result = type + "}"
-    logging.info(result)
     return result
 
 def addMinMax(type, node, val):
-    if val.command_class == _CC_MultiLevelSwitch:
-        return type + ', "maximum": 99, "minimum": 0'
+    if val.command_class in [_CC_MultiLevelSwitch, _CC_Battery]:
+        return type + ', "maximum": 100, "minimum": 0'
     elif val.command_class == _CC_Wakeup:
         return type + ', "maximum": 16777215, "minimum": 0'
     else:
