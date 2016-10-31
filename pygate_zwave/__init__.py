@@ -88,9 +88,10 @@ def onDeviceActuate(device, actuator, value):
         elif actuator == manager.refreshDeviceId:
             #todo: test if request_state really asks the device to refresh all command classes.
             manager.addDevice(node, "update")  # update the node and it's values
-            node.request_state()
+            #node.request_state()
+            node.refresh_info()                 # should do a more indepth refresh.
         else:
-            val = node.values[long(actuator)]
+            val = manager.getValueFromName(actuator, node)
             if val:
                 dataType = str(val.type)
                 if dataType == 'Bool':

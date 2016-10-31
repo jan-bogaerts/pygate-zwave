@@ -88,26 +88,27 @@ def _updateDiscoveryState(node):
         ccs = {}
         value['command classes'] = ccs
         for cc in node.command_classes:
-            ccs[cc] = False
+            if cc not in [0, 133, 114]:          # we don't process 0 (unknown, 133 = associations, 114 = manufacturer specific)
+                ccs[cc] = False
     items = dict(node.values)  # take a copy of the list cause if the network is still refreshing/loading, the list could get updated while in the loop
-    count = 0
     for key, val in items.iteritems():
-        ccs[val.command_class] = True               # this command class has already been processed
-        count += 1
-    value['complete'] = count / len(node.command_classes)
-    manager.gateway.send(json.dumps(value), node.node_id, "query_state")
+        if val.command_class not in [0, 133, 114]:  # we don't process 0 (unknown, 133 = associations, 114 = manufacturer specific)
+            ccs[val.command_class] = True               # this command class has already been processed
+    count = len([x for x in ccs.values() if x == True])
+    value['complete'] = float(count) / len(ccs)
+    manager.gateway.send(value, node.node_id, "query_state")
 
 
 
 def _updateDiscoveryStateCCs(node, cc):
-    if node.node_id in _includedDevices:
+    if node.node_id in _includedDevices and cc not in [0, 133, 114]:  # we don't process 0 (unknown, 133 = associations, 114 = manufacturer specific)
         value = _includedDevices[node.node_id]
         ccs = value['command classes']
         if ccs[cc] == False:
             ccs[cc] == True
-            count = len( [x for x in ccs.values if x == True]  )
-            value['complete'] = count / len(node.command_classes)
-            manager.gateway.send(json.dumps(value), node.node_id, "query_state")
+            count = len( [x for x in ccs.values() if x == True]  )
+            value['complete'] = float(count) / len(ccs)
+            manager.gateway.send(value, node.node_id, "query_state")
 
 
 def _nodeAdded(node):
@@ -161,10 +162,6 @@ def _assetAdded(node, value):
         if node.is_ready == False and manager.network.state >= ZWaveNetwork.STATE_AWAKED:          # when starting, don't need to add assets of known devices. only when the device is not yet fully queried (ready) and when the network has started. Note battery devices take a long time before they report in, so don't wait for them, otherwise we can't include easy.
             logger.info('asset added: ' + str(value))
             manager.addAsset(node, value)
-
-            # test to see if we can build bette asset id's
-            buildValueId(value)
-
             _updateDiscoveryStateCCs(node, value.command_class)
         else:
             logger.info('asset found: ' + str(value) + ", should only happen during startup, controller state: " + str(_controllerState) + ", node.isReady =" + str(node.is_ready))
@@ -174,7 +171,7 @@ def _assetAdded(node, value):
 def _assetRemoved(node, value):
     try:
         if value:
-            logger.info('asset removed: ' + str(value.value_id))
+            logger.info('asset removed: {} (internal id: {})'.format(manager.getAssetName(value)))
             # dump(node)
             manager.gateway.deleteAsset(node.node_id, value)
     except:
@@ -183,14 +180,14 @@ def _assetRemoved(node, value):
 def _assetValue(node, value):
     try:
         logger.info('asest value: ' + str(value))
-        manager.gateway.send(_getData(value), node.node_id, value.value_id)
+        manager.gateway.send(_getData(value), node.node_id, manager.getAssetName(value))
     except:
         logger.exception('failed to process asset value for node: ' + str(node) + ', asset: ' + str(value) )
 
 def _assetValueRefreshed(node, value):
     try:
         logger.info('asset value refreshed: ' + str(value))
-        manager.gateway.send(_getData(value), node.node_id, value.value_id)
+        manager.gateway.send(_getData(value), node.node_id, manager.getAssetName(value))
     except:
         logger.exception('failed to process asset value refresh for node: ' + str(node) + ', asset: ' + str(value) )
 
@@ -268,9 +265,3 @@ def getValueTypeInt(valueStr):
     elif valueStr == "Max":
         return 9
 
-def buildValueId(value):
-    """create a value Id"""
-    node = value.node
-
-    m_id = ( node.node_id << 24) | (value.genre << 22) | (value.command_class << 14) | (value.index << 4) | getValueTypeInt(value.type);
-    return m_id

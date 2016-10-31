@@ -81,7 +81,6 @@ def addDevice(node, mode = None):
         gateway.addAsset(refreshDeviceId, node.node_id, 'refresh', 'Refresh all the assets and their values', True, 'boolean', 'Undefined')
         gateway.addAsset('manufacturer_name', node.node_id, 'manufacturer name', 'The name of the manufacturer', False, 'string', 'Undefined')
         gateway.addAsset('product_name', node.node_id, 'product name', 'The name of the product', False, 'string', 'Undefined')
-        #gateway.addAsset('discovery_state', node.node_id, 'discovery state', 'details on the progress of the currently running discovery process for this device.', False, '{"type": "object", "properties": {"complete": {"type": "number", "unit":"%" }, "command classes": {"type": "array", "items": {"type": "object" }}  } }', 'Undefined')
         gateway.addAsset('query_state', node.node_id, 'query state', 'details on the progress of the currently running discovery process for this device.', False, '{"type": "object"}', 'Undefined')
         #todo: potential issue: upon startup, there might not yet be an mqtt connection, send may fail
         gateway.send(node.manufacturer_name, node.node_id, 'manufacturer_name')
@@ -93,8 +92,33 @@ def addDevice(node, mode = None):
 def addAsset(node, value):
     lbl = value.label.encode('ascii', 'ignore').replace('"', '\\"')        # make certain that we don't upload any illegal chars, also has to be ascii
     hlp = value.help.encode('ascii', 'ignore').replace('"', '\\"')         # make certain that we don't upload any illegal chars, also has to be ascii
-    gateway.addAsset(value.value_id, node.node_id, lbl, hlp, not value.is_read_only, _getAssetType(node, value), _getStyle(node, value))
+    gateway.addAsset(getAssetName(value), node.node_id, lbl, hlp, not value.is_read_only, _getAssetType(node, value), _getStyle(node, value))
     # dont send the data yet, we have a seperate event for this
+
+def getAssetName(value):
+    """
+    builds the asset name (local id) for a value. This consists out of command class and some extra details.
+    :param value: a zwave value
+    :return:
+    """
+    return "{}_{}".format(value.command_class, value.index)
+
+def getValueFromName(name, device):
+    """
+    searches for hte value object in the device, based on the asset name.
+    :param name: the name of the asset (command class,...)
+    :param device: the device object that contains a list of the values.
+    :return:
+    """
+    parts = name.split("_")
+    if len(parts) != 2:
+        raise Exception("invalid asset name, requires 2 parts: commandclass '_' index")
+    found = [device.values[x] for x in device.get_values(class_id=int(parts[0])) if device.values[x].index == int(parts[1])]
+    if len(found) == 1:
+        return found[0]
+    else:
+        raise Exception("unknown asset: " + name)
+
 
 def _getAssetType(node, val):
     '''extract the asset type from the command class'''
