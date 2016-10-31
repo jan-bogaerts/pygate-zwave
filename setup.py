@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='pygate_zwave',
-    version='1.0',
+    version='2.0',
     packages=['pygate_zwave'],
     url='www.allthingstalk.com',
     license='',

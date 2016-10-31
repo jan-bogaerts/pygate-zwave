@@ -24,8 +24,7 @@ Notes:
 - download the module
 - install the module, 2 options are available:
 	- run `python setup.py install` from within the plugin directory  
-	- or copy the directory pygate_virtualdevices to the root directory of the pygate software (at the same level as pygate.py)  
-and run `pip install -r requirements.txt` from within the pygate_virtualdevices directory.
+	- or copy the directory pygate_zwave to the root directory of the pygate software (at the same level as pygate.py).
 
 #configure the plugin
 This plugin needs some configuration parameters that have to be added to the file 'pygate.conf'. The following section has to be added:
