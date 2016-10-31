@@ -114,7 +114,7 @@ def getValueFromName(name, device):
     if len(parts) != 2:
         raise Exception("invalid asset name, requires 2 parts: commandclass '_' index")
     found = [device.values[x] for x in device.get_values(class_id=int(parts[0])) if device.values[x].index == int(parts[1])]
-    if len(found) == 1:
+    if len(found) >= 1:
         return found[0]
     else:
         raise Exception("unknown asset: " + name)
