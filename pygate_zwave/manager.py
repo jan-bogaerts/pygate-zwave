@@ -48,7 +48,7 @@ def syncDevices(existing, Full):
         gateway.deleteDevice(dev['id'])
 
 
-def addDevice(node, mode = None):
+def addDevice(node, mode = None, addAssets=True):
     """adds the specified node to the cloud as a device. Also adds all the assets.
     :param node: the device details
     :param createDevice: when true, addDevice will be called. when false, only the assets will be updated/created
@@ -63,26 +63,24 @@ def addDevice(node, mode = None):
             gateway.addDevice(node.node_id, name, node.type)
         elif mode == 'update':
             gateway.addDevice(node.node_id, None, node.type)            # when updating, don't overwrite the title of the device.
-        items = dict(node.values)                                         # take a copy of the list cause if the network is still refreshing/loading, the list could get updated while in the loop
-        gateway.addAsset('location', node.node_id, 'location', 'the physical location of the device', True, 'string', 'Config')
-        for key, val in items.iteritems():
-            try:
-                if val.command_class:                # if not related to a command class, then all other fields are 'none' as well, can't t much with them.
-                    # and not str(val.genre).lower() == 'system':    # old: System values are not interesting, it's about frames and such (possibly for future debugging...)
-                    addAsset(node, val)
-                    buildValueId(val)
-            except:
-                logger.exception('failed to sync device ' + str(node.node_id) + ' for module ' + gateway._moduleName + ', asset: ' + str(key) + '.')
-        #if _CC_Battery in node.command_classes:
-        #    gateway.addAsset('failed', node.node_id, 'failed', 'true when the battery device is no longer responding and the controller has labeled it as a failed device.', False, 'boolean', 'Secondary')
-        gateway.addAsset('failed', node.node_id, 'failed', 'true when the device is no longer responding and the controller has labeled it as a failed device.', False, 'boolean', 'Secondary')
-        # todo: potential issue: upon startup, there might not yet be an mqtt connection, send may fail
-        gateway.send(node.is_failed, node.node_id, 'failed')
-        gateway.addAsset(refreshDeviceId, node.node_id, 'refresh', 'Refresh all the assets and their values', True, 'boolean', 'Undefined')
-        gateway.addAsset('manufacturer_name', node.node_id, 'manufacturer name', 'The name of the manufacturer', False, 'string', 'Undefined')
-        gateway.addAsset('product_name', node.node_id, 'product name', 'The name of the product', False, 'string', 'Undefined')
-        gateway.addAsset('query_state', node.node_id, 'query state', 'details on the progress of the currently running discovery process for this device.', False, '{"type": "object"}', 'Undefined')
-        #todo: potential issue: upon startup, there might not yet be an mqtt connection, send may fail
+        if addAssets:                                                   # assets have already been created?
+            items = dict(node.values)                                         # take a copy of the list cause if the network is still refreshing/loading, the list could get updated while in the loop
+            gateway.addAsset('location', node.node_id, 'location', 'the physical location of the device', True, 'string', 'Config')
+            for key, val in items.iteritems():
+                try:
+                    if val.command_class:                # if not related to a command class, then all other fields are 'none' as well, can't t much with them.
+                        # and not str(val.genre).lower() == 'system':    # old: System values are not interesting, it's about frames and such (possibly for future debugging...)
+                        addAsset(node, val)
+                except:
+                    logger.exception('failed to sync device ' + str(node.node_id) + ' for module ' + gateway._moduleName + ', asset: ' + str(key) + '.')
+            #if _CC_Battery in node.command_classes:
+            #    gateway.addAsset('failed', node.node_id, 'failed', 'true when the battery device is no longer responding and the controller has labeled it as a failed device.', False, 'boolean', 'Secondary')
+            gateway.addAsset('failed', node.node_id, 'failed', 'true when the device is no longer responding and the controller has labeled it as a failed device.', False, 'boolean', 'Secondary')
+            gateway.send(node.is_failed, node.node_id, 'failed')
+            gateway.addAsset(refreshDeviceId, node.node_id, 'refresh', 'Refresh all the assets and their values', True, 'boolean', 'Undefined')
+            gateway.addAsset('manufacturer_name', node.node_id, 'manufacturer name', 'The name of the manufacturer', False, 'string', 'Undefined')
+            gateway.addAsset('product_name', node.node_id, 'product name', 'The name of the product', False, 'string', 'Undefined')
+            gateway.addAsset('query_state', node.node_id, 'query state', 'details on the progress of the currently running discovery process for this device.', False, '{"type": "object"}', 'Undefined')
         gateway.send(node.manufacturer_name, node.node_id, 'manufacturer_name')
         gateway.send(node.product_name, node.node_id, 'product_name')
     except:
@@ -210,9 +208,3 @@ def getGenreInt(genre):
     elif genre == "Count":
         return 4
 
-def buildValueId(value):
-    """create a value Id"""
-    node = value.node
-
-    m_id = ( node.node_id << 24) | (getGenreInt(value.genre) << 22) | (value.command_class << 14) | (value.index << 4) | getValueTypeInt(value.type);
-    return m_id

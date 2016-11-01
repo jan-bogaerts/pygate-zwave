@@ -89,6 +89,7 @@ def onDeviceActuate(device, actuator, value):
             #todo: test if request_state really asks the device to refresh all command classes.
             manager.addDevice(node, "update")  # update the node and it's values
             #node.request_state()
+            node.request_all_config_params()  # need to request the config values seperatly
             node.refresh_info()                 # should do a more indepth refresh.
         else:
             val = manager.getValueFromName(actuator, node)
