@@ -101,7 +101,7 @@ def getAssetName(value):
     :param value: a zwave value
     :return:
     """
-    return "{}_{}".format(value.command_class, value.index)
+    return "{}_{}_{}".format(value.command_class, value.index, value.instance)
 
 def getValueFromName(name, device):
     """
@@ -111,9 +111,9 @@ def getValueFromName(name, device):
     :return:
     """
     parts = name.split("_")
-    if len(parts) != 2:
-        raise Exception("invalid asset name, requires 2 parts: commandclass '_' index")
-    found = [device.values[x] for x in device.get_values(class_id=int(parts[0])) if device.values[x].index == int(parts[1])]
+    if len(parts) != 3:
+        raise Exception("invalid asset name, requires 3 parts: commandclass '_' index '_' instance")
+    found = [device.values[x] for x in device.get_values(class_id=int(parts[0])) if device.values[x].index == int(parts[1]) and device.values[x].instance == int(parts[2])]
     if len(found) >= 1:
         return found[0]
     else:
