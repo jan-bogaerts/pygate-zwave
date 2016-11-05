@@ -11,7 +11,7 @@ Notes:
 
 - Make certain that [pygate](https://github.com/allthingstalk/pygate) and all of it's dependencies have been installed first.
 - install the python open-zwave library (for the RPI):
-	- go to the home directory of the RPI
+	- go to the home directory of the pi user on the RPI (\home\pi)
 	- run: `sudo apt-get install -y git make`
 	- run `git clone https://github.com/OpenZWave/python-openzwave`
 	- run `cd python-openzwave`
