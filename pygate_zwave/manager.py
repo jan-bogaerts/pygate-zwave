@@ -35,17 +35,20 @@ def start():
     logger.info(gateway._moduleName + ' running')
 
 def syncDevices(existing, Full):
-    for key, node in network.nodes.iteritems():
-        if str(node.node_id) != '1':                    # for some reason, this compare doesn't work without convertion.
-            found = next((x for x in existing if x['id'].encode('ascii','ignore') == str(node.node_id)), None)
-            if not found:
-                addDevice(node, 'create')
-            else:
-                existing.remove(found)              # so we know at the end which ones have to be removed.
-                if Full:                            # don't refresh upon startup, this only slows it down, no need.
-                    addDevice(node, 'update')        # this will also refresh it
-    for dev in existing:                        # all the items that remain in the 'existing' list, are no longer devices in this network, so remove them
-        gateway.deleteDevice(dev['id'])
+    if network.state >= network.STATE_STARTED:
+        for key, node in network.nodes.iteritems():
+            if str(node.node_id) != '1':                    # for some reason, this compare doesn't work without convertion.
+                found = next((x for x in existing if x['id'].encode('ascii','ignore') == str(node.node_id)), None)
+                if not found:
+                    addDevice(node, 'create')
+                else:
+                    existing.remove(found)              # so we know at the end which ones have to be removed.
+                    if Full:                            # don't refresh upon startup, this only slows it down, no need.
+                        addDevice(node, 'update')        # this will also refresh it
+        for dev in existing:                        # all the items that remain in the 'existing' list, are no longer devices in this network, so remove them
+            gateway.deleteDevice(dev['id'])
+    else:
+        logger.error("can't sync devices: network not properly started")
 
 
 def addDevice(node, mode = None, addAssets=True):
@@ -145,8 +148,10 @@ def _getAssetType(node, val):
     return result
 
 def addMinMax(type, node, val):
-    if val.command_class in [_CC_MultiLevelSwitch, _CC_Battery]:
+    if val.command_class ==  _CC_Battery:
         return type + ', "maximum": 100, "minimum": 0'
+    if val.command_class == _CC_MultiLevelSwitch:
+        return type + ', "maximum": 99, "minimum": 0'
     elif val.command_class == _CC_Wakeup:
         return type + ', "maximum": 16777215, "minimum": 0'
     else:
